@@ -1,0 +1,4 @@
+[submodule "dlb_mp4demux"]
+	path = third-party/dlb_mp4demux/repo
+	url = https://github.com/DolbyLaboratories/dlb_mp4demux.git
+	branch = master

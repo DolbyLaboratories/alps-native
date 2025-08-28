@@ -1,0 +1,6 @@
+#ifndef VERSION_H
+#define VERSION_H
+
+#define ALPS_NATIVE_VERSION "@ALPS_NATIVE_VERSION@"
+
+#endif  /* VERSION_H */

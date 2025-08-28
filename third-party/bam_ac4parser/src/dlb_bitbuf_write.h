@@ -1,0 +1,81 @@
+/******************************************************************************
+ * This program is protected under international and U.S. copyright laws as
+ * an unpublished work. This program is confidential and proprietary to the
+ * copyright owners. Reproduction or disclosure, in whole or in part, or the
+ * production of derivative works therefrom without the express permission of
+ * the copyright owners is prohibited.
+ *
+ *                Copyright (C) 2007-2021 by Dolby International AB.
+ *                            All rights reserved.
+ ******************************************************************************/
+
+/** @addtogroup DLB_BITBUF_API */
+/*@{*/
+/**
+ * @file
+ * @brief  Bit Buffer Management Interface - Write API
+ */
+
+#ifndef DLB_BITBUF_WRITE_H
+#define DLB_BITBUF_WRITE_H
+
+#include "dlb_bitbuf.h"
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+/**
+ * @brief Write bits from an 'int' type.
+ *
+ * Write a pattern of `n` right-aligned bits of `data` to the current postion 
+ * of bitstream `p_bitbuf`. Note, that bits outside of this pattern have to be
+ * zero.
+ *
+ * For portability, `n` should not be larger than 16 bits (minimum size of 'int'
+ * in C90). Use `dlb_bitbuf_write_long()` if `n` is larger.
+ *
+ * In case an error code is returned,
+ * - nothing is written to the buffer and
+ * - no internal states are updated.
+ *
+ * @return 0: success,
+ *         1: out of bounds (write over buffer boundary)
+ */
+int
+dlb_bitbuf_write
+    (dlb_bitbuf_handle p_bitbuf    /**< [in,out] Handle to allocated and initialized #dlb_bitbuf instance. */
+    ,unsigned int      data        /**< [in] Bits to write into bitstream, right-aligned. */
+    ,unsigned int      n           /**< [in] Number of bits to write. */
+    ); 
+
+/**
+ * @brief Write bits from a 'long' type.
+ *
+ * Write a pattern of `n` right-aligned bits of `data` to the current postion 
+ * of bitstream `p_bitbuf`. Note, that bits outside of this pattern have to be
+ * zero.
+ *
+ * For portability, `n` should not be larger than 32 bits (minimum size of
+ * 'long' in C90).
+ *
+ * In case an error code is returned,
+ * - nothing is written to the buffer and
+ * - no internal states are updated.
+ *
+ * @return 0: success,
+ *         1: out of bounds (write over buffer boundary)
+ */
+int
+dlb_bitbuf_write_long
+    (dlb_bitbuf_handle p_bitbuf    /**< [in,out] Handle to allocated and initialized #dlb_bitbuf instance. */
+    ,unsigned long     data        /**< [in] Bits to write into bitstream, right-aligned. */
+    ,unsigned int      n           /**< [in] Number of bits to write. */
+    );
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* DLB_BITBUF_H */
+/*@}*/

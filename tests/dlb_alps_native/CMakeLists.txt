@@ -1,0 +1,25 @@
+add_executable(dlb_alps_native_tests dlb_alps_native_tests.c)
+
+target_link_options(dlb_alps_native_tests PRIVATE
+    -Wl,--wrap=alps_mp4dmx_query_mem
+    -Wl,--wrap=alps_mp4dmx_init
+    -Wl,--wrap=alps_mp4dmx_destroy
+    -Wl,--wrap=alps_mp4dmx_process_buffer
+    -Wl,--wrap=alps_mp4dmx_get_preselections
+    -Wl,--wrap=alps_mp4dmx_next_sample
+    -Wl,--wrap=alps_ac4parser_set_active_presentation_id
+)
+
+get_target_property(MP4DMX_INCLUDE alps_mp4dmx INCLUDE_DIRECTORIES)
+
+target_include_directories(dlb_alps_native_tests PRIVATE
+    MP4DMX_INCLUDE
+)
+
+target_link_libraries(dlb_alps_native_tests
+    project_compiler_options
+    cmocka::cmocka
+    dlb_alps_native
+)
+
+add_test(dlb_alps_native dlb_alps_native_tests)
