@@ -1,3 +1,28 @@
+/***********************************************************************************************************************
+ * Copyright (C) 2024 by Dolby International AB.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+ * following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+ *    disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+ *    following disclaimer in the documentation and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+ *    products derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ **********************************************************************************************************************/
+
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -157,6 +182,17 @@ uint8_t __wrap_mp4d_read_u8(mp4d_buffer_t *p)
     return mock_type(uint8_t);
 }
 
+uint8_t __wrap_mp4d_read_u16(mp4d_buffer_t *p)
+{
+    if (mock())
+    {
+        assert_non_null(p);
+        p->size = mock_type(uint64_t);
+    }
+
+    return mock_type(uint16_t);
+}
+
 uint32_t __wrap_mp4d_read_u24(mp4d_buffer_t *p)
 {
     if (mock())
@@ -285,6 +321,13 @@ static void will_return_find_atom(unsigned char *data, int ret_val)
     will_return(__wrap_mp4d_find_atom, ret_val);
 }
 
+static void will_return_mp4d_read_u16_change_buf_size(uint64_t size, uint16_t ret_val)
+{
+    will_return(__wrap_mp4d_read_u16, 1);
+    will_return(__wrap_mp4d_read_u16, size);
+    will_return(__wrap_mp4d_read_u16, ret_val);
+}
+
 static void will_return_mp4d_read_u24_change_buf_size(uint64_t size, uint32_t ret_val)
 {
     will_return(__wrap_mp4d_read_u24, 1);
@@ -303,6 +346,12 @@ static void will_return_mp4d_read_u8(uint8_t ret_val)
 {
     will_return(__wrap_mp4d_read_u8, 0);
     will_return(__wrap_mp4d_read_u8, ret_val);
+}
+
+static void will_return_mp4d_read_u16(uint16_t ret_val)
+{
+    will_return(__wrap_mp4d_read_u16, 0);
+    will_return(__wrap_mp4d_read_u16, ret_val);
 }
 
 static void will_return_mp4d_read_u24(uint32_t ret_val)
@@ -336,21 +385,31 @@ static void will_return_create_preselection(unsigned int flags, mp4d_buffer_t at
     /* parse all entity_ids */
     will_return_mp4d_read_u32(1);
     /* find elng box; data and size do not matter */
+    if (flags & 0x2000) {
+        // Selection priority
+        will_return_mp4d_read_u8(1);
+    }
     will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
     /* convert elng box to buffer */
     will_return(__wrap_mp4d_atom_to_buffer, &atom_bufs[1]);
-    /* find group labl box; data and size do not matter */
-    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
-    /* convert labl box to buffer */
-    will_return(__wrap_mp4d_atom_to_buffer, "group_label");
-    /* parse is_group_label */
-    will_return_mp4d_read_u24(0x1);
     /* find labl box; data and size do not matter */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
     will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
     /* convert labl box to buffer */
     will_return(__wrap_mp4d_atom_to_buffer, &atom_bufs[2]);
     /* parse is_group_label */
     will_return_mp4d_read_u24(0x0);
+    /* parse label_id */
+    will_return_mp4d_read_u16(0x1);
+    /* no kind box found */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
+
+    /* ARDI box */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    will_return(__wrap_mp4d_atom_to_buffer, "");
+    /* audio rendering indication */
+    will_return_mp4d_read_u8(1);
 }
 
 static void will_return_mp4d_demuxer_get_movie_info(uint32_t num_streams, int ret_value)
@@ -722,13 +781,13 @@ static void process_buffer__moov_moof_and_meta_present__preselections_available(
     assert_int_equal(parsed_preselections_count, 3);
     assert_int_equal(parsed_preselections[0].preselection_tag, atoi((char*)atom_bufs_pl[0].p_data));
     assert_string_equal(parsed_preselections[0].extended_language, (char*)atom_bufs_pl[1].p_data);
-    assert_string_equal(parsed_preselections[0].label, (char*)atom_bufs_pl[2].p_data);
+    assert_string_equal(parsed_preselections[0].labels[0].label, (char*)atom_bufs_pl[2].p_data);
     assert_int_equal(parsed_preselections[1].preselection_tag, atoi((char*)atom_bufs_en[0].p_data));
     assert_string_equal(parsed_preselections[1].extended_language, (char*)atom_bufs_en[1].p_data);
-    assert_string_equal(parsed_preselections[1].label, (char*)atom_bufs_en[2].p_data);
+    assert_string_equal(parsed_preselections[1].labels[0].label, (char*)atom_bufs_en[2].p_data);
     assert_int_equal(parsed_preselections[2].preselection_tag, atoi((char*)atom_bufs_es[0].p_data));
     assert_string_equal(parsed_preselections[2].extended_language, (char*)atom_bufs_es[1].p_data);
-    assert_string_equal(parsed_preselections[2].label, (char*)atom_bufs_es[2].p_data);
+    assert_string_equal(parsed_preselections[2].labels[0].label, (char*)atom_bufs_es[2].p_data);
 
     alps_mp4dmx_destroy(dmx);
 }
@@ -771,7 +830,7 @@ static void process_buffer__moof_present_but_no_track_id__no_movie_info_error_re
     will_return(__wrap_mp4d_demuxer_parse, MP4D_NO_ERROR);
 
     ret = alps_mp4dmx_process_buffer(dmx, buffer, buf_size);
-    assert_int_equal(ret, ALPS_RET_E_NO_MOVIE_INFO);
+    assert_int_equal(ret, ALPS_RET_E_NO_AC4_TRACK);
 
     alps_mp4dmx_destroy(dmx);
 }
@@ -1336,6 +1395,8 @@ static void process_buffer__labl_box_too_small__buf_too_small_returned(void **st
     will_return(__wrap_mp4d_atom_to_buffer, &atom_bufs_pl[1]);
     /* find labl box; data and size do not matter */
     will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
     /* convert labl box to buffer */
     will_return(__wrap_mp4d_atom_to_buffer, &atom_bufs_pl[2]);
     /* parse is_group_label */
@@ -1392,10 +1453,13 @@ static void process_buffer__labl_buf_size_up_to_label__buf_too_small_returned(vo
     will_return(__wrap_mp4d_atom_to_buffer, &atom_bufs_pl[1]);
     /* find labl box; data and size do not matter */
     will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
     /* convert labl box to buffer */
     will_return(__wrap_mp4d_atom_to_buffer, &atom_buf);
     /* parse is_group_label */
-    will_return_mp4d_read_u24_change_buf_size(BUF_SIZE_TOO_SMALL, 0);
+    will_return_mp4d_read_u24(0);
+    will_return_mp4d_read_u16_change_buf_size(BUF_SIZE_TOO_SMALL, 0);
 
     ret = alps_mp4dmx_process_buffer(dmx, buffer, buf_size);
     assert_int_equal(ret, ALPS_RET_E_BUFF_TOO_SMALL);
@@ -1413,7 +1477,7 @@ static void process_buffer__no_prsl_tag__preselection_tag_not_valid(void **state
     mp4d_buffer_t atom_bufs_pl[3] = {
         {(unsigned char *)"1", 2, NULL},
         {(unsigned char *)"pl", 3, NULL},
-        {(unsigned char *)"Polish", 7, NULL}
+        {(unsigned char *)"pl\0Polish", 10, NULL}
     };
     alps_ret ret;
     alps_mp4dmx_preselection *parsed_preselections = NULL;
@@ -1450,11 +1514,21 @@ static void process_buffer__no_prsl_tag__preselection_tag_not_valid(void **state
     will_return(__wrap_mp4d_atom_to_buffer, &atom_bufs_pl[1]);
     /* find labl box; data and size do not matter */
     will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
     /* convert labl box to buffer */
     will_return(__wrap_mp4d_atom_to_buffer, &atom_bufs_pl[2]);
     /* parse is_group_label */
     will_return_mp4d_read_u24(0);
-
+    /* parse label_id */
+    will_return_mp4d_read_u16(1);
+    /* no kind box found */
+    will_return_find_atom(NULL, MP4D_E_ATOM_UNKNOWN);
+    /* ARDI box */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    will_return(__wrap_mp4d_atom_to_buffer, &atom_bufs_pl[0]);
+    /* audio rendering indication */
+    will_return_mp4d_read_u8(1);
     ret = alps_mp4dmx_process_buffer(dmx, buffer, buf_size);
     assert_int_equal(ret, ALPS_RET_OK);
 
@@ -1463,7 +1537,7 @@ static void process_buffer__no_prsl_tag__preselection_tag_not_valid(void **state
     assert_int_equal(parsed_preselections_count, 1);
     assert_int_equal(parsed_preselections[0].preselection_tag, INVALID_PRESELECTION_TAG);
     assert_string_equal(parsed_preselections[0].extended_language, (char*)atom_bufs_pl[1].p_data);
-    assert_string_equal(parsed_preselections[0].label, (char*)atom_bufs_pl[2].p_data);
+    assert_string_equal(parsed_preselections[0].labels[0].label, (char*)atom_bufs_pl[2].p_data); 
 
     alps_mp4dmx_destroy(dmx);
 }

@@ -1,3 +1,28 @@
+/***********************************************************************************************************************
+ * Copyright (C) 2024 by Dolby International AB.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+ * following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+ *    disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+ *    following disclaimer in the documentation and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+ *    products derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ **********************************************************************************************************************/
+
 #include <setjmp.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -11,6 +36,10 @@
 
 #define MP4DMX_MEM_SIZE (1234)
 #define SIZEOF_ALPS_CTX (48)
+
+#define PRESELECTION_1 {0, NULL, 1, "pl", NULL, 0, NULL,0,0,0}
+#define PRESELECTION_2 {0, NULL, 2, "pl", NULL, 0, NULL,0,0,0}
+#define PRESELECTION_3 {0, NULL, 3, "pl", NULL, 0, NULL,0,0,0}
 
 /* FUNCTIONS' MOCKS */
 
@@ -223,9 +252,9 @@ static void process_isobmff_segment__all_ok__presentations_available(void **stat
     unsigned char mem[SIZEOF_ALPS_CTX + MP4DMX_MEM_SIZE];
     unsigned char segment_buf[128];
     alps_mp4dmx_preselection preselections[] = {
-        {0, NULL, 1, "Low DE", "pl"},
-        {0, NULL, 2, "Medium DE", "pl"},
-        {0, NULL, 3, "High DE", "pl"}
+        PRESELECTION_1,
+        PRESELECTION_2,
+        PRESELECTION_3
     };
     size_t prsl_count = sizeof(preselections) / sizeof(preselections[0]);
     unsigned char *frame_buf = (unsigned char*)0x123abc;
@@ -256,11 +285,11 @@ static void process_isobmff_segment__all_ok__presentations_available(void **stat
     assert_int_equal(ret, ALPS_RET_OK);
     assert_non_null(presentations);
     assert_int_equal(pres_count, prsl_count);
-    for (i = 0; i < pres_count; i++)
-    {
-        assert_int_equal(presentations[i].presentation_id, preselections[i].preselection_tag);
-        assert_string_equal(presentations[i].label, preselections[i].label);
-        assert_string_equal(presentations[i].language, preselections[i].extended_language);
+    for (i = 0; i < pres_count; i++) {
+        assert_int_equal(presentations[i].preselection_tag,
+                         preselections[i].preselection_tag);
+        assert_int_equal(presentations[i].labels_count, preselections[i].labels_count);
+        assert_string_equal(presentations[i].extended_language, preselections[i].extended_language);
     }
 
     alps_get_active_presentation_id(ctx, &active_presentation_id);
@@ -324,9 +353,9 @@ static void process_isobmff_segment__mp4dmx_getting_prsl_fails__error_returned(v
     unsigned char mem[SIZEOF_ALPS_CTX + MP4DMX_MEM_SIZE];
     unsigned char segment_buf[128];
     alps_mp4dmx_preselection preselections[] = {
-        {0, NULL, 1, "Low DE", "pl"},
-        {0, NULL, 2, "Medium DE", "pl"},
-        {0, NULL, 3, "High DE", "pl"}
+        PRESELECTION_1,
+        PRESELECTION_2,
+        PRESELECTION_3
     };
     size_t prsl_count = sizeof(preselections) / sizeof(preselections[0]);
 
@@ -386,14 +415,14 @@ static void process_isobmff_segment__pres_list_changes_twice__callback_called_tw
     callback_ctx cb_ctx = (callback_ctx)0x123abc;
     unsigned char segment_buf[128];
     alps_mp4dmx_preselection prsl_1[] = {
-        {0, NULL, 1, "Low DE", "pl"},
-        {0, NULL, 2, "Medium DE", "pl"}
+        PRESELECTION_1,
+        PRESELECTION_2
     };
     size_t prsl_1_count = sizeof(prsl_1) / sizeof(prsl_1[0]);
     alps_mp4dmx_preselection prsl_2[] = {
-        {0, NULL, 1, "Low DE", "en"},
-        {0, NULL, 2, "Medium DE", "en"},
-        {0, NULL, 3, "High DE", "en"}
+        PRESELECTION_1,
+        PRESELECTION_2,
+        PRESELECTION_3
     };
     size_t prsl_2_count = sizeof(prsl_2) / sizeof(prsl_2[0]);
     alps_presentation *presentations = NULL;
@@ -429,11 +458,11 @@ static void process_isobmff_segment__pres_list_changes_twice__callback_called_tw
     assert_int_equal(ret, ALPS_RET_OK);
     assert_non_null(presentations);
     assert_int_equal(pres_count, prsl_2_count);
-    for (i = 0; i < pres_count; i++)
-    {
-        assert_int_equal(presentations[i].presentation_id, prsl_2[i].preselection_tag);
-        assert_string_equal(presentations[i].label, prsl_2[i].label);
-        assert_string_equal(presentations[i].language, prsl_2[i].extended_language);
+    for (i = 0; i < pres_count; i++) {
+        assert_int_equal(presentations[i].preselection_tag,
+                         prsl_2[i].preselection_tag);
+        assert_int_equal(presentations[i].labels_count, prsl_2[i].labels_count);
+        assert_string_equal(presentations[i].extended_language, prsl_2[i].extended_language);
     }
 }
 
@@ -445,8 +474,8 @@ static void process_isobmff_segment__pres_list_changes_once__callback_called_onc
     callback_ctx cb_ctx = (callback_ctx)0x123abc;
     unsigned char segment_buf[128];
     alps_mp4dmx_preselection prsl[] = {
-        {0, NULL, 1, "Low DE", "pl"},
-        {0, NULL, 2, "Medium DE", "pl"}
+        PRESELECTION_1,
+        PRESELECTION_2
     };
     size_t prsl_count = sizeof(prsl) / sizeof(prsl[0]);
     alps_presentation *presentations = NULL;
@@ -481,11 +510,11 @@ static void process_isobmff_segment__pres_list_changes_once__callback_called_onc
     assert_int_equal(ret, ALPS_RET_OK);
     assert_non_null(presentations);
     assert_int_equal(pres_count, prsl_count);
-    for (i = 0; i < pres_count; i++)
-    {
-        assert_int_equal(presentations[i].presentation_id, prsl[i].preselection_tag);
-        assert_string_equal(presentations[i].label, prsl[i].label);
-        assert_string_equal(presentations[i].language, prsl[i].extended_language);
+    for (i = 0; i < pres_count; i++) {
+        assert_int_equal(presentations[i].preselection_tag,
+                         prsl[i].preselection_tag);
+        assert_int_equal(presentations[i].labels_count, prsl[i].labels_count);
+        assert_string_equal(presentations[i].extended_language, prsl[i].extended_language);
     }
 }
 
