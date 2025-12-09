@@ -1,5 +1,5 @@
 /***********************************************************************************************************************
- * Copyright (C) 2024 by Dolby International AB.
+ * Copyright (C) 2024-2025 by Dolby International AB.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -75,10 +75,13 @@ typedef struct alps_mp4dmx_preselection_t
     char *extended_language;            /**< language tag denoting the language of the preselection */
     alps_mp4dmx_prsl_kind *kinds;       /**< array of kinds the preselection is of */
     unsigned int kinds_count;           /**< number of items in kinds array */
-    alps_mp4dmx_prsl_labl *labels;      /** array of the labels describing this preselection */
-    unsigned int labels_count;          /** number if items in the labels array */
-    int selection_priority;             /** selection priority of the presentation */
-    int audio_rendering_indication;     /** audio rendering indication, or 255 if not present in box */
+    alps_mp4dmx_prsl_labl *labels;      /**< array of the labels describing this preselection */
+    unsigned int labels_count;          /**< number if items in the labels array */
+    int selection_priority;             /**< selection priority of the presentation */
+    int audio_rendering_indication;     /**< audio rendering indication, or 255 if not present in box */
+    int dialog_gain_present;            /**< signals whether the dialog_gain value is present */
+    float dialog_gain;                  /**< represents a gain value in decibel, reflecting the perceptually subjective gain of dialogue in the mix. */
+                                        /**< this field is optional, the value NaN should be interpereted as missing info*/
 } alps_mp4dmx_preselection;
 
 /**

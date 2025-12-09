@@ -1,5 +1,5 @@
 /***********************************************************************************************************************
- * Copyright (C) 2024 by Dolby International AB.
+ * Copyright (C) 2024-2025 by Dolby International AB.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -47,12 +47,12 @@
  */
 struct alps_ctx_t
 {
-    alps_mp4dmx             *mp4dmx;                 /**> pointer to the MP-4 demuxer's context */
-    int                      active_presentation_id; /**> ID of the active presentation */
-    alps_presentation       *presentations;          /**> array of presentation parsed from a ISOBMFF segment */
-    size_t                   presentations_count;    /**> number of items in the presentations aray */
-    presentations_changed_cb presentations_cb;       /**> pointer to the callback called when presentations array changes */
-    callback_ctx             presentations_cb_ctx;   /**> pointer to the data passed to the above callback */
+    alps_mp4dmx             *mp4dmx;                 /**< pointer to the MP-4 demuxer's context */
+    int                      active_presentation_id; /**< ID of the active presentation */
+    alps_presentation       *presentations;          /**< array of presentation parsed from a ISOBMFF segment */
+    size_t                   presentations_count;    /**< number of items in the presentations aray */
+    presentations_changed_cb presentations_cb;       /**< pointer to the callback called when presentations array changes */
+    callback_ctx             presentations_cb_ctx;   /**< pointer to the data passed to the above callback */
 };
 
 static void alps_free_presentations_array( alps_presentation **presentations, size_t presentations_count);
@@ -329,14 +329,16 @@ static alps_ret alps_get_presentations_from_isobmff_segment(
             alps_presentation *pres = &ctx->presentations[i];
             alps_mp4dmx_preselection *prsl = &preselections[i];
 
-            if (pres->preselection_tag != prsl->preselection_tag)
+            if (pres->id != prsl->preselection_tag)
             {
                 *presentations_changed = 1;
             }
 
-            pres->preselection_tag = prsl->preselection_tag;
+            pres->id = prsl->preselection_tag;
             pres->audio_rendering_indication = prsl->audio_rendering_indication;
             pres->selection_priority = prsl->selection_priority;
+            pres->dialog_gain = prsl->dialog_gain;
+            pres->dialog_gain_present = prsl->dialog_gain_present;
 
 
             /* reallocate labels array if needed */

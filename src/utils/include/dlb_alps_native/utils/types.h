@@ -1,5 +1,5 @@
 /***********************************************************************************************************************
- * Copyright (C) 2024 by Dolby International AB.
+ * Copyright (C) 2024-2025 by Dolby International AB.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -79,7 +79,7 @@ typedef struct alps_presentation_label_t
  */
 typedef struct alps_presentation_t
 {
-    int preselection_tag;            /** ID of the presentation */
+    int id;                          /** ID of the presentation */
     char *extended_language;         /** language of the presentation */
     alps_presentation_kind *kinds;   /** array of kinds the preselection is of */
     unsigned int kinds_count;        /** number of items in kinds array */
@@ -87,6 +87,8 @@ typedef struct alps_presentation_t
     unsigned int labels_count;       /** number of items in the labels array */
     int selection_priority;          /** selection priority of the presentation */
     int audio_rendering_indication;  /** audio rendering indication or ALPS_ARDI_BOX_MISSING */
+    int dialog_gain_present;         /** signals whether the dialog_gain value is present */
+    float dialog_gain;               /** represents a gain value in decibel, reflecting the perceptually subjective gain of dialogue in the mix. */
 } alps_presentation;
 
 #endif /* DLB_ALPS_NATIVE_UTILS_TYPES_H */

@@ -1,5 +1,5 @@
 /***********************************************************************************************************************
- * Copyright (C) 2024 by Dolby International AB.
+ * Copyright (C) 2024-2025 by Dolby International AB.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -146,7 +146,7 @@ static bam_error bam_binary_sink_after_assign_int(
 
         for (i = 0; i < sink->presentations_count; i++)
         {
-            sink->presentations[i].preselection_tag = ALPS_INVALID_PRES_ID;
+            sink->presentations[i].id = ALPS_INVALID_PRES_ID;
         }
     }
 
@@ -197,7 +197,7 @@ static bam_error bam_binary_sink_after_call_int(
 
     if (!strcmp(return_var_name, "presentation_id"))
     {
-        sink->presentations[sink->curr_pres].preselection_tag = return_value;
+        sink->presentations[sink->curr_pres].id = return_value;
     }
 
     return err;

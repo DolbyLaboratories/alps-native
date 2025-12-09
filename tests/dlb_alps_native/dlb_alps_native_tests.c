@@ -1,5 +1,5 @@
 /***********************************************************************************************************************
- * Copyright (C) 2024 by Dolby International AB.
+ * Copyright (C) 2024-2025 by Dolby International AB.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -37,9 +37,9 @@
 #define MP4DMX_MEM_SIZE (1234)
 #define SIZEOF_ALPS_CTX (48)
 
-#define PRESELECTION_1 {0, NULL, 1, "pl", NULL, 0, NULL,0,0,0}
-#define PRESELECTION_2 {0, NULL, 2, "pl", NULL, 0, NULL,0,0,0}
-#define PRESELECTION_3 {0, NULL, 3, "pl", NULL, 0, NULL,0,0,0}
+#define PRESELECTION_1 {0, NULL, 1, "pl", NULL, 0, NULL,0,0,0,0,0}
+#define PRESELECTION_2 {0, NULL, 2, "pl", NULL, 0, NULL,0,0,0,0,0}
+#define PRESELECTION_3 {0, NULL, 3, "pl", NULL, 0, NULL,0,0,0,0,0}
 
 /* FUNCTIONS' MOCKS */
 
@@ -286,7 +286,7 @@ static void process_isobmff_segment__all_ok__presentations_available(void **stat
     assert_non_null(presentations);
     assert_int_equal(pres_count, prsl_count);
     for (i = 0; i < pres_count; i++) {
-        assert_int_equal(presentations[i].preselection_tag,
+        assert_int_equal(presentations[i].id,
                          preselections[i].preselection_tag);
         assert_int_equal(presentations[i].labels_count, preselections[i].labels_count);
         assert_string_equal(presentations[i].extended_language, preselections[i].extended_language);
@@ -459,7 +459,7 @@ static void process_isobmff_segment__pres_list_changes_twice__callback_called_tw
     assert_non_null(presentations);
     assert_int_equal(pres_count, prsl_2_count);
     for (i = 0; i < pres_count; i++) {
-        assert_int_equal(presentations[i].preselection_tag,
+        assert_int_equal(presentations[i].id,
                          prsl_2[i].preselection_tag);
         assert_int_equal(presentations[i].labels_count, prsl_2[i].labels_count);
         assert_string_equal(presentations[i].extended_language, prsl_2[i].extended_language);
@@ -511,7 +511,7 @@ static void process_isobmff_segment__pres_list_changes_once__callback_called_onc
     assert_non_null(presentations);
     assert_int_equal(pres_count, prsl_count);
     for (i = 0; i < pres_count; i++) {
-        assert_int_equal(presentations[i].preselection_tag,
+        assert_int_equal(presentations[i].id,
                          prsl[i].preselection_tag);
         assert_int_equal(presentations[i].labels_count, prsl[i].labels_count);
         assert_string_equal(presentations[i].extended_language, prsl[i].extended_language);

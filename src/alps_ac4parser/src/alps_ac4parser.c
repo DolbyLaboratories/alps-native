@@ -1,5 +1,5 @@
 /***********************************************************************************************************************
- * Copyright (C) 2024 by Dolby International AB.
+ * Copyright (C) 2024-2025 by Dolby International AB.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -68,7 +68,7 @@ alps_ret alps_ac4parser_set_active_presentation_id(
     active_presentation_found = 0;
     for (i = 0; i < presentations_count; i++)
     {
-        if (presentations[i].preselection_tag == active_presentation_id)
+        if (presentations[i].id == active_presentation_id)
         {
             active_presentation_found = 1;
         }
@@ -79,7 +79,7 @@ alps_ret alps_ac4parser_set_active_presentation_id(
 
     for (i = 0; i < presentations_count; i++)
     {
-        if (presentations[i].preselection_tag != active_presentation_id)
+        if (presentations[i].id != active_presentation_id)
         {
             CHECK_RET_AND_BAIL(bam_binary_sink_set_presentation_level((bam_binary_sink*)sink, i, PRESENTATION_LEVEL_DISABLED));
         }

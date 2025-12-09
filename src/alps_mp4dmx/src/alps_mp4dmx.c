@@ -1,5 +1,5 @@
 /***********************************************************************************************************************
- * Copyright (C) 2024 by Dolby International AB.
+ * Copyright (C) 2024-2025 by Dolby International AB.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -31,6 +31,7 @@
 #include "dlb_alps_native/alps_mp4dmx/alps_mp4dmx.h"
 
 #include <assert.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -90,14 +91,14 @@
  */
 struct alps_mp4dmx_t
 {
-    mp4d_demuxer_ptr_t        mp4d_demuxer;        /**> pointer to the actual MP4 demuxer used internally */
-    mp4d_trackreader_ptr_t    mp4d_track_reader;   /**> pointer to the object that reads MP4 tracks */
-    unsigned char            *segment_buf;         /**> buffer that holds current MP4 segment's data */
-    size_t                    segment_buf_pos;     /**> number of bytes in the segment's buffer already parsed */
-    mp4d_movie_info_t         movie_info;          /**> MP4 movie info parsed from moov box */
-    mp4d_stream_info_t        ac4_track_info;      /**> stream info from first AC-4 track parsed from moov box */
-    alps_mp4dmx_preselection *preselections;       /**> array of preselections */
-    uint32_t                  preselections_count; /**> number of items in preselections array */
+    mp4d_demuxer_ptr_t        mp4d_demuxer;        /**< pointer to the actual MP4 demuxer used internally */
+    mp4d_trackreader_ptr_t    mp4d_track_reader;   /**< pointer to the object that reads MP4 tracks */
+    unsigned char            *segment_buf;         /**< buffer that holds current MP4 segment's data */
+    size_t                    segment_buf_pos;     /**< number of bytes in the segment's buffer already parsed */
+    mp4d_movie_info_t         movie_info;          /**< MP4 movie info parsed from moov box */
+    mp4d_stream_info_t        ac4_track_info;      /**< stream info from first AC-4 track parsed from moov box */
+    alps_mp4dmx_preselection *preselections;       /**< array of preselections */
+    uint32_t                  preselections_count; /**< number of items in preselections array */
 };
 
 /**
@@ -105,8 +106,8 @@ struct alps_mp4dmx_t
  */
 typedef struct  alps_mp4dmx_full_box_t
 {
-    mp4d_atom_t box; /**> the underlying Box structure */
-    uint8_t version; /**> box's version value */
+    mp4d_atom_t box; /**< the underlying Box structure */
+    uint8_t version; /**< box's version value */
 } alps_mp4dmx_full_box;
 
 /**
@@ -114,9 +115,9 @@ typedef struct  alps_mp4dmx_full_box_t
  */
 typedef struct  alps_mp4dmx_grpl_t
 {
-    mp4d_atom_t box;                         /**> the underlying Box structure */
-    uint32_t preselections_count;            /**> number of PreselectionGroupBoxes inside this box */
-    alps_mp4dmx_preselection *preselections; /**> array of preselections created from the PreselectionGroupBoxes */
+    mp4d_atom_t box;                         /**< the underlying Box structure */
+    uint32_t preselections_count;            /**< number of PreselectionGroupBoxes inside this box */
+    alps_mp4dmx_preselection *preselections; /**< array of preselections created from the PreselectionGroupBoxes */
 } alps_mp4dmx_grpl;
 
 /**
@@ -124,8 +125,8 @@ typedef struct  alps_mp4dmx_grpl_t
  */
 typedef struct  alps_mp4dmx_meta_t
 {
-    alps_mp4dmx_full_box full_box; /**> underlying FullBox structure */
-    alps_mp4dmx_grpl grpl;         /**> GroupsListBox inside this MetaBox */
+    alps_mp4dmx_full_box full_box; /**< underlying FullBox structure */
+    alps_mp4dmx_grpl grpl;         /**< GroupsListBox inside this MetaBox */
 } alps_mp4dmx_meta;
 
 /**
@@ -133,8 +134,8 @@ typedef struct  alps_mp4dmx_meta_t
  */
 typedef struct  alps_mp4dmx_moov_t
 {
-    mp4d_atom_t box;       /**> underlying Box structure */
-    alps_mp4dmx_meta meta; /**> MetaBox inside this MovieBox */
+    mp4d_atom_t box;       /**< underlying Box structure */
+    alps_mp4dmx_meta meta; /**< MetaBox inside this MovieBox */
 } alps_mp4dmx_moov;
 
 alps_ret alps_mp4dmx_query_mem(
@@ -383,6 +384,31 @@ static void alps_mp4dmx_free_preselection(
     preselection->preselection_tag = -1;
 }
 
+
+
+static alps_ret alps_mp4dmx_parse_udta(
+    mp4d_atom_t udta,
+    alps_mp4dmx_preselection * preselection
+)
+{
+    mp4d_atom_t diap_atom;
+    mp4d_error_t mp4d_err = MP4D_NO_ERROR;
+    mp4d_buffer_t buff;
+    uint16_t dialog_gain = 0;
+
+    mp4d_err = mp4d_find_atom(&udta, "diap", 0, &diap_atom);
+
+    if (mp4d_err == MP4D_NO_ERROR) {
+        buff = mp4d_atom_to_buffer(&diap_atom);
+        dialog_gain = mp4d_read_u16(&buff);
+        preselection->dialog_gain = ((float)*(int16_t*)(&dialog_gain)) / 256.0f;
+        preselection->dialog_gain_present = 1;
+    }
+
+    return ALPS_RET_OK;
+}
+
+
 /**
  * @brief Constructs a preselection struct from the given atom
  * @param[in] prsl prsl atom to parse
@@ -527,6 +553,27 @@ static alps_ret alps_mp4dmx_create_preselection(
         }
     }
 
+    /* count the UserDataBoxes */
+    i = 0;
+    while (!(mp4d_err = mp4d_find_atom(prsl, "udta", i, &atom)))
+    {
+        i++;
+    }
+
+    // UserDataBoxes are optional
+    if (mp4d_err != MP4D_NO_ERROR && mp4d_err != MP4D_E_ATOM_UNKNOWN)
+    {
+        CHECK_MP4D_ERR_AND_BAIL(mp4d_err, ALPS_RET_E_PARSE);
+    }
+
+    preselection->dialog_gain = 0.0f / 0.0f;
+    preselection->dialog_gain_present = 0;
+
+    if (i > 0)
+    {
+      mp4d_err = mp4d_find_atom(prsl, "udta", i, &atom);
+      alps_mp4dmx_parse_udta(atom, preselection);
+    }
 
     /* find AudioRenderingIndicationBox */
     mp4d_err = mp4d_find_atom(prsl, "ardi", 0, &atom);
@@ -757,3 +804,4 @@ alps_ret alps_mp4dmx_get_preselections(
 bail:
     return ret;
 }
+
