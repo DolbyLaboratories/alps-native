@@ -21,7 +21,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">dlb_alps_native<span id="projectnumber">&#160;2.0.0</span>
+   <div id="projectname">dlb_alps_native<span id="projectnumber">&#160;3.0.0</span>
    </div>
   </td>
  </tr>
@@ -72,7 +72,7 @@ $(function() {
   <div class="headertitle"><div class="title">ALPS Native (C) </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p><a class="anchor" id="md__2builds_2oei_2dlb__alps__native_2README"></a>ALPS (Application Layer Presentation Selection) enables selection of a presentation from an <b>Dolby</b> AC-4 bitstream. The <b>Dolby</b> AC-4 decoder will subsequently decode the selected presentation from that bitstream only, ignoring all the other presentations. This repository provides a C implementation and optional CLI for testing purposes.</p>
+<div class="textblock"><p><a class="anchor" id="md__2builds_2oei_2dlb__alps__native_2README"></a>ALPS (Application Layer Presentation Selection) enables selection of a presentation from a <b>Dolby</b> AC-4 bitstream. The <b>Dolby</b> AC-4 decoder will subsequently decode only the selected presentation from that bitstream, ignoring all the other presentations. This repository provides a C implementation and optional CLI for testing purposes.</p>
 <h1><a class="anchor" id="autotoc_md1"></a>
 Table of Contents</h1>
 <ul>
@@ -91,18 +91,12 @@ Installation</h1>
 <ol type="1">
 <li>Install CMake.</li>
 <li>Install Conan package manager.</li>
-<li>If you don't have a Conan profile yet, run: <br  />
- <code>conan profile detect --name &lt;CONAN_PROFILE&gt;</code></li>
-<li>Change directory to project's root: <br  />
- <code>cd &lt;project_root&gt;</code></li>
-<li>Install dependencies: <br  />
- <code>conan install . --profile=&lt;CONAN_PROFILE&gt; --build=missing</code></li>
-<li>List CMake presets that were created by Conan and choose one: <br  />
- <code>cmake --list-presets</code></li>
-<li>Configure with chosen preset: <br  />
- <code>cmake --preset &lt;PRESET_NAME&gt;</code></li>
-<li>Build: <br  />
- <code>cmake --build --preset &lt;PRESET_NAME&gt;</code></li>
+<li>If you do not have a Conan profile yet, run: <code>conan profile detect --name &lt;CONAN_PROFILE&gt;</code></li>
+<li>Change directory to project's root: <code>cd &lt;project_root&gt;</code></li>
+<li>Install dependencies: <code>conan install . --profile=&lt;CONAN_PROFILE&gt; --build=missing</code></li>
+<li>List CMake presets that were created by Conan and choose one: <code>cmake --list-presets</code></li>
+<li>Configure with chosen preset: <code>cmake --preset &lt;PRESET_NAME&gt;</code></li>
+<li>Build: <code>cmake --build --preset &lt;PRESET_NAME&gt;</code></li>
 </ol>
 <p>Options:</p><ul>
 <li><code>BUILD_SHARED_LIBS</code> — build shared instead of static libraries.</li>
@@ -148,7 +142,7 @@ Library</h2>
 <div class="ttc" id="astructalps__ctx__t_html"><div class="ttname"><a href="structalps__ctx__t.html">alps_ctx_t</a></div><div class="ttdoc">Holds values calculated and required for operation.</div><div class="ttdef"><b>Definition</b> dlb_alps_native.c:49</div></div>
 <div class="ttc" id="astructalps__presentation__t_html"><div class="ttname"><a href="structalps__presentation__t.html">alps_presentation_t</a></div><div class="ttdoc">Describes an AC-4 presentation.</div><div class="ttdef"><b>Definition</b> types.h:81</div></div>
 </div><!-- fragment --><p><b>alps object should be used for single period of content.</b> For multi-period content, multiple instances of alps_ctx should be used.</p>
-<p>Alps processes memory buffers that contain ISOBMFF segment data. These buffers are typically the result of network requests performed by the media player. After the player has downloaded the ISOBMFF segment data, data is processed using the ALPS method 'alps_process_isobmff_segment'. The processed data is then returned to the media player for forwarding to the decoder. Integration with the media player depends on the player and differs from player to player implementation.</p>
+<p>Alps processes memory buffers that contain ISOBMFF segment data. These buffers are typically the result of network requests performed by the media player. After the player has downloaded the ISOBMFF segment data, data is processed in-place using the ALPS method 'alps_process_isobmff_segment'. The media player then receives the processed data and forwards it to the decoder. Integration with the media player depends on the player and differs from player to player implementation.</p>
 <h2><a class="anchor" id="autotoc_md5"></a>
 CLI</h2>
 <p>If built with <code>BUILD_CLI=ON</code> (default), a CLI binary is produced. Usage example where the last argument is the desired presentation ID: </p><div class="fragment"><div class="line">./alps_cli &lt;segment1.m4s&gt; &lt;segment2.m4s&gt; ... &lt;active_presentation_id&gt;</div>
@@ -165,7 +159,7 @@ API</h1>
 </ul>
 <h2><a class="anchor" id="autotoc_md8"></a>
 ISOBMFF init segment signaling</h2>
-<p>ALPS supports presentation signaling on ISOBMFF init segment level and provides parsing support for this data. An abbreviated example of ISOBMFF structure with boxes that are relevant to ALPS can be found below. <b>Dolby</b> AC-4 bitstreams may be packaged containing this information so that the available presentations and their properties can be derived from the ISOBMFF segment. Information derived from those boxes can be accessed through the <code>alps_get_presentations</code> method.</p>
+<p>ALPS supports presentation signaling on ISOBMFF init segment level and provides parsing support for this data. An abbreviated example of the ISOBMFF structure with boxes that are relevant to ALPS can be found below. <b>Dolby</b> AC-4 bitstreams may be packaged containing this information so that the available presentations and their properties can be derived from the ISOBMFF segment. Information derived from those boxes can be accessed through the <code>alps_get_presentations</code> method.</p>
 <div class="fragment"><div class="line">[moov]</div>
 <div class="line">    [trak]</div>
 <div class="line">        [tkhd]</div>

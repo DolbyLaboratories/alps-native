@@ -1,5 +1,5 @@
 /***********************************************************************************************************************
- * Copyright (C) 2024-2025 by Dolby International AB.
+ * Copyright (C) 2024-2026 by Dolby International AB.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -394,18 +394,27 @@ static alps_ret alps_mp4dmx_parse_udta(
     mp4d_atom_t diap_atom;
     mp4d_error_t mp4d_err = MP4D_NO_ERROR;
     mp4d_buffer_t buff;
-    uint16_t dialog_gain = 0;
+    uint8_t dialog_gain = 0;
+    alps_ret ret = ALPS_RET_OK;
+  
+    // If there are multiple udta's with diap, take the first one
+    if (preselection->dialog_gain_present)
+        goto bail;
 
     mp4d_err = mp4d_find_atom(&udta, "diap", 0, &diap_atom);
-
+  
+    // diap box is optional
     if (mp4d_err == MP4D_NO_ERROR) {
         buff = mp4d_atom_to_buffer(&diap_atom);
-        dialog_gain = mp4d_read_u16(&buff);
-        preselection->dialog_gain = ((float)*(int16_t*)(&dialog_gain)) / 256.0f;
+        mp4d_skip_bytes(&buff, 4); /* skip version and flags */
+        CHECK_EXPR_AND_BAIL(buff.size == (uint64_t)-1, ALPS_RET_E_BUFF_TOO_SMALL);
+        dialog_gain = mp4d_read_u8(&buff);
+        CHECK_EXPR_AND_BAIL(buff.size == (uint64_t)-1, ALPS_RET_E_BUFF_TOO_SMALL);
+        preselection->dialog_gain = ((float)*(int8_t*)(&dialog_gain)) / 2.0f;
         preselection->dialog_gain_present = 1;
     }
-
-    return ALPS_RET_OK;
+bail:
+    return ret;
 }
 
 
@@ -429,6 +438,7 @@ static alps_ret alps_mp4dmx_create_preselection(
     int selection_priority_present;
     int interleaving_tag_present;
     uint32_t i;
+    uint32_t j;
     mp4d_atom_t atom;
 
     /* releases memory when preselection instance is reused */
@@ -484,12 +494,20 @@ static alps_ret alps_mp4dmx_create_preselection(
     prsl->size = buf.size;
 
     /* find and parse ExtendedLanguageBox */
-    CHECK_MP4D_ERR_AND_BAIL(mp4d_find_atom(prsl, "elng", 0, &atom), ALPS_RET_E_PARSE);
-    buf = mp4d_atom_to_buffer(&atom);
-    mp4d_skip_bytes(&buf, 4); /* skip version and flags */
-    CHECK_EXPR_AND_BAIL(buf.size == (uint64_t)-1, ALPS_RET_E_BUFF_TOO_SMALL);
-    CHECK_RET_AND_BAIL(alps_mp4dmx_mp4d_read_string(&buf, &preselection->extended_language));
+    preselection->extended_language = 0;
+    mp4d_err = mp4d_find_atom(prsl, "elng", 0, &atom);
 
+    if (mp4d_err == MP4D_NO_ERROR)
+    {
+      buf = mp4d_atom_to_buffer(&atom);
+      mp4d_skip_bytes(&buf, 4); /* skip version and flags */
+      CHECK_EXPR_AND_BAIL(buf.size == (uint64_t)-1, ALPS_RET_E_BUFF_TOO_SMALL);
+      CHECK_RET_AND_BAIL(alps_mp4dmx_mp4d_read_string(&buf, &preselection->extended_language));
+    }
+    else if (mp4d_err != MP4D_E_ATOM_UNKNOWN)
+    {
+        CHECK_MP4D_ERR_AND_BAIL(mp4d_err, ALPS_RET_E_PARSE);
+    }
 
     // Count the LabelBoxes
     i = 0;
@@ -497,8 +515,9 @@ static alps_ret alps_mp4dmx_create_preselection(
     {
         i++;
     }
-
-    if ((mp4d_err != MP4D_NO_ERROR && mp4d_err != MP4D_E_ATOM_UNKNOWN) || i == 0)
+    
+    // LabelBoxes are optional, so its fine if none are found
+    if ((mp4d_err != MP4D_NO_ERROR && mp4d_err != MP4D_E_ATOM_UNKNOWN))
     {
         CHECK_MP4D_ERR_AND_BAIL(mp4d_err, ALPS_RET_E_PARSE);
     }
@@ -571,8 +590,12 @@ static alps_ret alps_mp4dmx_create_preselection(
 
     if (i > 0)
     {
-      mp4d_err = mp4d_find_atom(prsl, "udta", i, &atom);
-      alps_mp4dmx_parse_udta(atom, preselection);
+      // There can be multiple udta boxes
+      for (j = 0; j < i; j++)
+      {
+        mp4d_err = mp4d_find_atom(prsl, "udta", j, &atom);
+        alps_mp4dmx_parse_udta(atom, preselection);
+      }
     }
 
     /* find AudioRenderingIndicationBox */
@@ -721,7 +744,7 @@ alps_ret alps_mp4dmx_process_buffer(
         if (MP4D_FOURCC_EQ(atom.type, "moov") || MP4D_FOURCC_EQ(atom.type, "moof"))
         {
             CHECK_MP4D_ERR_AND_BAIL(
-                mp4d_demuxer_parse(dmx->mp4d_demuxer, buffer + dmx->segment_buf_pos, size - dmx->segment_buf_pos, 1, 0, &box_size),
+                mp4d_demuxer_parse(dmx->mp4d_demuxer, buffer + dmx->segment_buf_pos, size - dmx->segment_buf_pos, 1, dmx->segment_buf_pos, &box_size),
                 ALPS_RET_E_PARSE);
 
             if (MP4D_FOURCC_EQ(atom.type, "moov"))

@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['4_20content_20requirements_0',['&lt;strong&gt;Dolby&lt;/strong&gt; AC-4 content requirements',['../index.html#autotoc_md12',1,'']]],
-  ['4_20presentation_20signaling_1',['&lt;strong&gt;Dolby&lt;/strong&gt; AC-4 presentation signaling',['../index.html#autotoc_md7',1,'']]]
+  ['0_200_0',['0 0',['../md__2builds_2oei_2dlb__alps__native_2RELEASENOTES.html#autotoc_md24',1,'1.0.0'],['../md__2builds_2oei_2dlb__alps__native_2RELEASENOTES.html#autotoc_md20',1,'2.0.0'],['../md__2builds_2oei_2dlb__alps__native_2RELEASENOTES.html',1,'3.0.0']]]
 ];

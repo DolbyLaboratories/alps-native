@@ -1,5 +1,5 @@
 ########################################################################################################################
-# Copyright (C) 2024-2025 by Dolby International AB.
+# Copyright (C) 2024-2026 by Dolby International AB.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -26,7 +26,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 project(dlb_alps_native
-        VERSION 2.0.0
+        VERSION 3.0.0
         LANGUAGES C)
 
 option(BUILD_SHARED_LIBS "Build all modules as shared libraries instead of static" ON)

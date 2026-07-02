@@ -1,5 +1,5 @@
 /***********************************************************************************************************************
- * Copyright (C) 2024-2025 by Dolby International AB.
+ * Copyright (C) 2024-2026 by Dolby International AB.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -1301,7 +1301,7 @@ static void process_buffer__elng_box_too_small__buf_too_small_returned(void **st
     alps_mp4dmx_destroy(dmx);
 }
 
-static void process_buffer__cannot_find_labl_box__parse_error_returned(void **state)
+static void process_buffer__cannot_find_labl_box__no_error(void **state)
 {
     unsigned char mem[TOTAL_MEM_SIZE];
     alps_mp4dmx *dmx;
@@ -1345,10 +1345,16 @@ static void process_buffer__cannot_find_labl_box__parse_error_returned(void **st
     /* convert elng box to buffer */
     will_return(__wrap_mp4d_atom_to_buffer, &atom_bufs_pl[1]);
     /* find labl box; data and size do not matter */
-    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_INVALID_ATOM);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
+    /* no kind box found */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
+    /* no udta box found */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
+    /* no ardi box found */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
 
     ret = alps_mp4dmx_process_buffer(dmx, buffer, buf_size);
-    assert_int_equal(ret, ALPS_RET_E_PARSE);
+    assert_int_equal(ret, ALPS_RET_OK);
 
     alps_mp4dmx_destroy(dmx);
 }
@@ -1679,7 +1685,104 @@ static void next_sample__all_ok__data_and_size_set_correctly(void **state)
 }
 
 
-static void process_buffer__diap_box_parsed_dialog_gain_set(void **state)
+static void _process_buffer__diap_box_parsed_dialog_gain_set(int8_t diap, float expected)
+{
+    unsigned char mem[TOTAL_MEM_SIZE];
+    alps_mp4dmx *dmx;
+    const size_t buf_size = 128;
+    unsigned char buffer[buf_size];
+    mp4d_buffer_t atom_buf = {0};
+    mp4d_buffer_t atom_bufs_pl[3] = {
+        {(unsigned char *)"1", 2, NULL},
+        {(unsigned char *)"pl", 3, NULL},
+        {(unsigned char *)"Polish", 7, NULL}
+    };
+    alps_ret ret;
+    alps_mp4dmx_preselection *parsed_preselections = NULL;
+    size_t parsed_preselections_count = 0;
+
+    dmx = init_demuxer(mem);
+
+    /* find the meta box */
+    will_return_parse_atom_header(buf_size, "meta", MP4D_NO_ERROR);
+    /* alps_mp4dmx_parse_meta() */
+    will_return_parse_full_box(&atom_buf, 0, 0);
+    /* find grpl box */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    /* alps_mp4dmx_parse_grpl() */
+    /* find all prsl boxes */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
+    /* iterate over all prsl boxes */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    /* alps_mp4dmx_create_preselection() */
+    /* convert prsl box to buffer */
+    will_return(__wrap_mp4d_atom_to_buffer, &atom_bufs_pl[0]);
+    /* parse flags */
+    will_return_mp4d_read_u24(TAG_PRESENT_FLAG);
+    /* parse num_entities_in_group */
+    will_return_mp4d_read_u32(1);
+    /* parse all entity_ids */
+    will_return_mp4d_read_u32(1);
+    /* find elng box; data and size do not matter */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    /* convert elng box to buffer */
+    will_return(__wrap_mp4d_atom_to_buffer, &atom_bufs_pl[1]);
+    /* find labl box; data and size do not matter */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    /* convert labl box to buffer */
+    will_return(__wrap_mp4d_atom_to_buffer, &atom_bufs_pl[2]);
+    /* parse is_group_label */
+    will_return_mp4d_read_u24(0x0);
+    /* parse label_id */
+    will_return_mp4d_read_u16(0x1);
+    /* no kind box found */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
+
+    /* Find udta box */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+
+    /* Find diap box */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+
+    /* Mock diap box */
+    will_return(__wrap_mp4d_atom_to_buffer, "");
+    will_return_mp4d_read_u8(*(uint8_t*)(&diap));
+
+    /* ARDI box */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    will_return(__wrap_mp4d_atom_to_buffer, "");
+    /* audio rendering indication */
+    will_return_mp4d_read_u8(1);
+
+
+    ret = alps_mp4dmx_process_buffer(dmx, buffer, buf_size);
+    assert_int_equal(ret, ALPS_RET_OK);
+
+    ret = alps_mp4dmx_get_preselections(dmx, &parsed_preselections, &parsed_preselections_count);
+    assert_float_equal(parsed_preselections[0].dialog_gain, expected, 0.1f);
+    assert_true(parsed_preselections[0].dialog_gain_present);
+
+    assert_int_equal(ret, ALPS_RET_OK);
+    alps_mp4dmx_destroy(dmx);
+}
+
+static void process_buffer__diap_box_parsed_dialog_gain_set(void **state){
+  (void)state;
+
+  _process_buffer__diap_box_parsed_dialog_gain_set(-128,-64.0f);
+  _process_buffer__diap_box_parsed_dialog_gain_set(-64,-32.0f);
+  _process_buffer__diap_box_parsed_dialog_gain_set(-1,-0.5f);
+  _process_buffer__diap_box_parsed_dialog_gain_set(0,0.0f);
+  _process_buffer__diap_box_parsed_dialog_gain_set(64,32.0f);
+  _process_buffer__diap_box_parsed_dialog_gain_set(127,63.5f);
+}
+
+static void process_buffer__diap_box_in_second_udta_parsed_dialog_gain_set(void** state)
 {
     unsigned char mem[TOTAL_MEM_SIZE];
     alps_mp4dmx *dmx;
@@ -1737,17 +1840,122 @@ static void process_buffer__diap_box_parsed_dialog_gain_set(void **state)
     /* no kind box found */
     will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
 
-    /* Find udta box */
+    /* Find 2 udta boxes */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
     will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
     will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
-    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
 
-    /* Find diap box */
+
+    /* First udta: no diap box */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
+
+    /* Second udta: Find diap box */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
     will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
 
     /* Mock diap box */
     will_return(__wrap_mp4d_atom_to_buffer, "");
-    will_return_mp4d_read_u16(256);
+    will_return_mp4d_read_u8(10);
+
+    /* ARDI box */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    will_return(__wrap_mp4d_atom_to_buffer, "");
+    /* audio rendering indication */
+    will_return_mp4d_read_u8(1);
+
+
+    ret = alps_mp4dmx_process_buffer(dmx, buffer, buf_size);
+    assert_int_equal(ret, ALPS_RET_OK);
+
+    ret = alps_mp4dmx_get_preselections(dmx, &parsed_preselections, &parsed_preselections_count);
+    assert_float_equal(parsed_preselections[0].dialog_gain, 5.0f, 0.1f);
+    assert_true(parsed_preselections[0].dialog_gain_present);
+
+    assert_int_equal(ret, ALPS_RET_OK);
+    alps_mp4dmx_destroy(dmx);
+}
+
+
+static void process_buffer__diap_box_in_first_and_second_udta_parsed_dialog_gain_set(void** state)
+{
+    unsigned char mem[TOTAL_MEM_SIZE];
+    alps_mp4dmx *dmx;
+    const size_t buf_size = 128;
+    unsigned char buffer[buf_size];
+    mp4d_buffer_t atom_buf = {0};
+    mp4d_buffer_t atom_bufs_pl[3] = {
+        {(unsigned char *)"1", 2, NULL},
+        {(unsigned char *)"pl", 3, NULL},
+        {(unsigned char *)"Polish", 7, NULL}
+    };
+    alps_ret ret;
+    alps_mp4dmx_preselection *parsed_preselections = NULL;
+    size_t parsed_preselections_count = 0;
+
+    (void)state;
+
+    dmx = init_demuxer(mem);
+
+    /* find the meta box */
+    will_return_parse_atom_header(buf_size, "meta", MP4D_NO_ERROR);
+    /* alps_mp4dmx_parse_meta() */
+    will_return_parse_full_box(&atom_buf, 0, 0);
+    /* find grpl box */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    /* alps_mp4dmx_parse_grpl() */
+    /* find all prsl boxes */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
+    /* iterate over all prsl boxes */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    /* alps_mp4dmx_create_preselection() */
+    /* convert prsl box to buffer */
+    will_return(__wrap_mp4d_atom_to_buffer, &atom_bufs_pl[0]);
+    /* parse flags */
+    will_return_mp4d_read_u24(TAG_PRESENT_FLAG);
+    /* parse num_entities_in_group */
+    will_return_mp4d_read_u32(1);
+    /* parse all entity_ids */
+    will_return_mp4d_read_u32(1);
+    /* find elng box; data and size do not matter */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    /* convert elng box to buffer */
+    will_return(__wrap_mp4d_atom_to_buffer, &atom_bufs_pl[1]);
+    /* find labl box; data and size do not matter */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    /* convert labl box to buffer */
+    will_return(__wrap_mp4d_atom_to_buffer, &atom_bufs_pl[2]);
+    /* parse is_group_label */
+    will_return_mp4d_read_u24(0x0);
+    /* parse label_id */
+    will_return_mp4d_read_u16(0x1);
+    /* no kind box found */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
+
+    /* Find 2 udta boxes */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_E_ATOM_UNKNOWN);
+
+
+    /* First udta: Find diap box */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+
+    /* Mock diap box */
+    will_return(__wrap_mp4d_atom_to_buffer, "");
+    will_return_mp4d_read_u8(2);
+
+    /* Second udta: Find diap box */
+    will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
+
+    /* Don't mock the second diap box, the parser should ignore it */
+    /* will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR); */
+    /* will_return(__wrap_mp4d_atom_to_buffer, ""); */
+    /* will_return_mp4d_read_u8(4); */
 
     /* ARDI box */
     will_return_find_atom(FAKE_DATA_PTR, MP4D_NO_ERROR);
@@ -1766,6 +1974,7 @@ static void process_buffer__diap_box_parsed_dialog_gain_set(void **state)
     assert_int_equal(ret, ALPS_RET_OK);
     alps_mp4dmx_destroy(dmx);
 }
+
 
 static void process_buffer__no_udta_box_dialog_gain_set_to_nan(void **state)
 {
@@ -1965,7 +2174,7 @@ int main(void) {
         cmocka_unit_test(process_buffer__prsl_buf_size_up_to_prsl_tag__buf_too_small_returned),
         cmocka_unit_test(process_buffer__cannot_find_elng_box__parse_error_returned),
         cmocka_unit_test(process_buffer__elng_box_too_small__buf_too_small_returned),
-        cmocka_unit_test(process_buffer__cannot_find_labl_box__parse_error_returned),
+        cmocka_unit_test(process_buffer__cannot_find_labl_box__no_error),
         cmocka_unit_test(process_buffer__labl_box_too_small__buf_too_small_returned),
         cmocka_unit_test(process_buffer__labl_buf_size_up_to_label__buf_too_small_returned),
         cmocka_unit_test(process_buffer__no_prsl_tag__preselection_tag_not_valid),
@@ -1977,7 +2186,9 @@ int main(void) {
         cmocka_unit_test(next_sample__all_ok__data_and_size_set_correctly),
         cmocka_unit_test(process_buffer__no_udta_box_dialog_gain_set_to_nan),
         cmocka_unit_test(process_buffer__no_diap_box_dialog_gain_set_to_nan),
-        cmocka_unit_test(process_buffer__diap_box_parsed_dialog_gain_set)
+        cmocka_unit_test(process_buffer__diap_box_parsed_dialog_gain_set),
+        cmocka_unit_test(process_buffer__diap_box_in_second_udta_parsed_dialog_gain_set),
+        cmocka_unit_test(process_buffer__diap_box_in_first_and_second_udta_parsed_dialog_gain_set)
     };
 
     return cmocka_run_group_tests(tests, NULL, NULL);

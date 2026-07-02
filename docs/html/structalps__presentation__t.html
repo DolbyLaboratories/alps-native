@@ -21,7 +21,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">dlb_alps_native<span id="projectnumber">&#160;2.0.0</span>
+   <div id="projectname">dlb_alps_native<span id="projectnumber">&#160;3.0.0</span>
    </div>
   </td>
  </tr>
@@ -83,8 +83,7 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:ae1ddb7851af2da9586d95efa872591bd" id="r_ae1ddb7851af2da9586d95efa872591bd"><td class="memItemLeft" align="right" valign="top"><a id="ae1ddb7851af2da9586d95efa872591bd" name="ae1ddb7851af2da9586d95efa872591bd"></a>
-int&#160;</td><td class="memItemRight" valign="bottom"><b>id</b></td></tr>
+<tr class="memitem:ae1ddb7851af2da9586d95efa872591bd" id="r_ae1ddb7851af2da9586d95efa872591bd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structalps__presentation__t.html#ae1ddb7851af2da9586d95efa872591bd">id</a></td></tr>
 <tr class="separator:ae1ddb7851af2da9586d95efa872591bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2689261f4b7030e0eb3ee27b01d15869" id="r_a2689261f4b7030e0eb3ee27b01d15869"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structalps__presentation__t.html#a2689261f4b7030e0eb3ee27b01d15869">extended_language</a></td></tr>
 <tr class="separator:a2689261f4b7030e0eb3ee27b01d15869"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -119,7 +118,7 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>id</b></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>selection priority of the presentation </p>
+<p>audio rendering indication or ALPS_ARDI_BOX_MISSING </p>
 
 </div>
 </div>
@@ -134,7 +133,7 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>id</b></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>signals whether the dialog_gain value is present </p>
+<p>represents a gain value in decibel, reflecting the perceptually subjective gain of dialogue in the mix. </p>
 
 </div>
 </div>
@@ -149,7 +148,7 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>id</b></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>audio rendering indication or ALPS_ARDI_BOX_MISSING </p>
+<p>signals whether the dialog_gain value is present </p>
 
 </div>
 </div>
@@ -161,6 +160,21 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>id</b></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">char* alps_presentation_t::extended_language</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>language of the presentation </p>
+
+</div>
+</div>
+<a id="ae1ddb7851af2da9586d95efa872591bd" name="ae1ddb7851af2da9586d95efa872591bd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae1ddb7851af2da9586d95efa872591bd">&#9670;&#160;</a></span>id</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int alps_presentation_t::id</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -179,7 +193,7 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>id</b></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>language of the presentation </p>
+<p>array of kinds the preselection is of </p>
 
 </div>
 </div>
@@ -194,7 +208,7 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>id</b></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>array of kinds the preselection is of </p>
+<p>number of items in kinds array </p>
 
 </div>
 </div>
@@ -209,7 +223,7 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>id</b></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>number of items in kinds array </p>
+<p>array of labels describing the presentation </p>
 
 </div>
 </div>
@@ -224,7 +238,7 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>id</b></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>array of labels describing the presentation </p>
+<p>number of items in the labels array </p>
 
 </div>
 </div>
@@ -239,7 +253,7 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>id</b></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>number of items in the labels array </p>
+<p>selection priority of the presentation </p>
 
 </div>
 </div>

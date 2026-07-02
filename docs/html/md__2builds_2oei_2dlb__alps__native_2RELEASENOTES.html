@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>dlb_alps_native: RELEASENOTES</title>
+<title>dlb_alps_native: 3.0.0</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -21,7 +21,7 @@
  <tbody>
  <tr id="projectrow">
   <td id="projectalign">
-   <div id="projectname">dlb_alps_native<span id="projectnumber">&#160;2.0.0</span>
+   <div id="projectname">dlb_alps_native<span id="projectnumber">&#160;3.0.0</span>
    </div>
   </td>
  </tr>
@@ -69,10 +69,53 @@ $(function() {
 
 </div><!-- top -->
 <div><div class="header">
-  <div class="headertitle"><div class="title">RELEASENOTES</div></div>
+  <div class="headertitle"><div class="title">3.0.0</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p>TBD </p>
+<div class="textblock"><p><a class="anchor" id="autotoc_md17"></a> </p>
+<h2><a class="anchor" id="autotoc_md18"></a>
+BREAKING CHANGES</h2>
+<ul>
+<li>The format of the dialog_gain field parsed from the ISOBMFF init segment data changed from u16 to u8</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md19"></a>
+Bug fixes</h2>
+<ul>
+<li>Fixed an issue causing incompatibility with non-init segments containing multiple boxes</li>
+<li>Made <code>init-&gt;meta-&gt;grpl-&gt;prsl-&gt;labl</code> boxes optional</li>
+<li>Made <code>init-&gt;meta-&gt;grpl-&gt;prsl-&gt;elng</code> boxes optional</li>
+</ul>
+<h1><a class="anchor" id="autotoc_md20"></a>
+2.0.0</h1>
+<p>This release includes the following changes since the 1.0.0</p>
+<h3><a class="anchor" id="autotoc_md21"></a>
+Features</h3>
+<ul>
+<li>Improved ISOBMFF signaling - alps_presentation structure provides more information parsed from ISOBMFF</li>
+<li>New API for Presentation changed callback context fetching <code>alps_get_presentations_changed_callback_context</code></li>
+</ul>
+<h3><a class="anchor" id="autotoc_md22"></a>
+Bug Fixes</h3>
+<ul>
+<li>Fixed errors in docs generation</li>
+</ul>
+<h3><a class="anchor" id="autotoc_md23"></a>
+BREAKING CHANGES</h3>
+<ul>
+<li>alps_presentation structure has changed: <code>presentation_id</code> renamed to <code>id</code>, <code>language</code> has been renamed to <code>extended_language</code>, <code>label</code> has changed to <code>labels</code> and is now an array of <code>alps_presentation_label</code></li>
+</ul>
+<h1><a class="anchor" id="autotoc_md24"></a>
+1.0.0</h1>
+<p>First public release</p>
+<h3><a class="anchor" id="autotoc_md25"></a>
+Features</h3>
+<ul>
+<li>Selection of active presentation from AC-4 bitstream</li>
+<li>Processing ISOBMFF segment to force selected presentation decoding</li>
+<li>Fetching presentations list available in the stream</li>
+<li>Fetching active presentation ID</li>
+<li>Presentations list change detection - callback when detected </li>
+</ul>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->
 <!-- start footer part -->

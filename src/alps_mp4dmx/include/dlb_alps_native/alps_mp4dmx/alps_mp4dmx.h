@@ -1,5 +1,5 @@
 /***********************************************************************************************************************
- * Copyright (C) 2024-2025 by Dolby International AB.
+ * Copyright (C) 2024-2026 by Dolby International AB.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -58,10 +58,10 @@ typedef struct alps_mp4dmx_prsl_kind_t
  */
 typedef struct alps_mp4dmx_prsl_labl_t
 {
-    u_int16_t label_id;      /** id of the label */
-    char* language;          /** language of the label */
-    char* label;             /** the actual label text */
-    u_int8_t is_group_label; /** is this a label for the group of labels */
+    u_int16_t label_id;      /**< id of the label */
+    char* language;          /**< language of the label */
+    char* label;             /**< the actual label text */
+    u_int8_t is_group_label; /**< is this a label for the group of labels */
 } alps_mp4dmx_prsl_labl;
 
 /**
@@ -80,8 +80,7 @@ typedef struct alps_mp4dmx_preselection_t
     int selection_priority;             /**< selection priority of the presentation */
     int audio_rendering_indication;     /**< audio rendering indication, or 255 if not present in box */
     int dialog_gain_present;            /**< signals whether the dialog_gain value is present */
-    float dialog_gain;                  /**< represents a gain value in decibel, reflecting the perceptually subjective gain of dialogue in the mix. */
-                                        /**< this field is optional, the value NaN should be interpereted as missing info*/
+    float dialog_gain;                  /**< represents a gain value in decibel, reflecting the perceptually subjective gain of dialogue in the mix. This field is optional, the value NaN should be interpreted as missing info */
 } alps_mp4dmx_preselection;
 
 /**

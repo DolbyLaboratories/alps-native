@@ -1,3 +1,15 @@
+# 3.0.0
+
+### BREAKING CHANGES
+
+- The format of the dialog_gain field parsed from the ISOBMFF init segment data changed from u16 to u8
+
+### Bug fixes
+
+- Fixed an issue causing incompatibility with non-init segments containing multiple boxes
+- Made `init->meta->grpl->prsl->labl` boxes optional
+- Made `init->meta->grpl->prsl->elng` boxes optional
+
 # 2.0.0
 
 This release includes the following changes since the 1.0.0
